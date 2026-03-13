@@ -5,8 +5,6 @@ const pantallaDetalleJornada = document.getElementById('pantallaDetalleJornada')
 const listaJornadas = document.getElementById('listaJornadas');
 const contenidoDetalleJornada = document.getElementById('contenidoDetalleJornada');
 const btnVolverHistorico = document.getElementById('btnVolverHistorico');
-
-// Modal de edición
 const modalEditarRegistro = document.getElementById('modalEditarRegistro');
 const inputEditarCantidad = document.getElementById('inputEditarCantidad');
 const btnGuardarEdicion = document.getElementById('btnGuardarEdicion');
@@ -16,19 +14,20 @@ let usuarioApp = JSON.parse(sessionStorage.getItem('usuarioApp'));
 let idRegistroEnEdicion = null;
 let idJornadaEnVista = null;
 
-// 1. CARGAR LA LISTA DE JORNADAS
 export async function cargarHistorico() {
     pantallaHistorico.classList.remove('hidden');
     listaJornadas.innerHTML = "<p>Buscando historial...</p>";
+    usuarioApp = JSON.parse(sessionStorage.getItem('usuarioApp')); // Recarga por si hubo cambios
 
     try {
         let q;
         const jornadasRef = collection(db, "jornadas_diarias");
 
-        // Lógica de permisos
         if (usuarioApp.rol === "veedor") {
-            // El veedor solo ve lo de su proveedor
             q = query(jornadasRef, where("proveedor", "==", usuarioApp.proveedor));
+        } else if (usuarioApp.rol === "autorizado") {
+            // El inspector SOLO ve sus propias jornadas históricas
+            q = query(jornadasRef, where("id_inspector", "==", usuarioApp.uid));
         } else {
             // Supervisor o Superadmin ven TODO
             q = query(jornadasRef); 
@@ -59,16 +58,12 @@ export async function cargarHistorico() {
                 </div>
             `;
         });
-
         listaJornadas.innerHTML = html;
-
     } catch (error) {
-        console.error("Error al cargar jornadas:", error);
         listaJornadas.innerHTML = "<p>Error al cargar los datos.</p>";
     }
 }
 
-// 2. VER EL DETALLE Y LOS RECORTES DE UN DÍA
 window.verDetalleJornada = async function(idJornada, proveedor, fecha) {
     idJornadaEnVista = idJornada;
     pantallaHistorico.classList.add('hidden');
@@ -81,12 +76,10 @@ window.verDetalleJornada = async function(idJornada, proveedor, fecha) {
         const querySnapshot = await getDocs(q);
 
         let html = "";
-        
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
             const sufijo = data.unidad_medida === "metro" ? "m" : "u";
             
-            // Validamos si mostramos el botón de editar
             let btnEditar = "";
             if (usuarioApp.rol === "supervisor" || usuarioApp.rol === "superadmin") {
                 btnEditar = `<button class="btn-editar-chico" onclick="abrirModalEdicion('${data.id_registro}', '${data.tipo_elemento}', ${data.cantidad})">Editar</button>`;
@@ -102,17 +95,13 @@ window.verDetalleJornada = async function(idJornada, proveedor, fecha) {
                 </div>
             `;
         });
-
         if(html === "") html = "<p>No hay recortes en esta jornada.</p>";
         contenidoDetalleJornada.innerHTML = html;
-
     } catch (error) {
-        console.error("Error al cargar detalle:", error);
         contenidoDetalleJornada.innerHTML = "<p>Error al cargar recortes.</p>";
     }
 }
 
-// 3. LÓGICA DE EDICIÓN (SOLO ADMIN)
 window.abrirModalEdicion = function(idRegistro, tipoElemento, cantidadActual) {
     idRegistroEnEdicion = idRegistro;
     document.getElementById('labelEditarInfo').innerText = `Modificando: ${tipoElemento}`;
@@ -120,34 +109,21 @@ window.abrirModalEdicion = function(idRegistro, tipoElemento, cantidadActual) {
     modalEditarRegistro.classList.remove('hidden');
 }
 
-btnCancelarEdicion.addEventListener('click', () => {
-    modalEditarRegistro.classList.add('hidden');
-});
+btnCancelarEdicion.addEventListener('click', () => modalEditarRegistro.classList.add('hidden'));
 
 btnGuardarEdicion.addEventListener('click', async () => {
     const nuevaCantidad = parseFloat(inputEditarCantidad.value);
-    
-    if (isNaN(nuevaCantidad) || nuevaCantidad <= 0) {
-        alert("Ingrese un valor válido.");
-        return;
-    }
+    if (isNaN(nuevaCantidad) || nuevaCantidad <= 0) return alert("Ingrese un valor válido.");
 
     try {
         btnGuardarEdicion.disabled = true;
         btnGuardarEdicion.innerText = "Guardando...";
-
-        const registroRef = doc(db, "registros_extraccion", idRegistroEnEdicion);
-        await updateDoc(registroRef, { cantidad: nuevaCantidad });
-
+        await updateDoc(doc(db, "registros_extraccion", idRegistroEnEdicion), { cantidad: nuevaCantidad });
         modalEditarRegistro.classList.add('hidden');
         btnGuardarEdicion.disabled = false;
         btnGuardarEdicion.innerText = "Guardar Cambios";
-        
-        // Recargamos el detalle para ver el impacto
         verDetalleJornada(idJornadaEnVista, document.getElementById('tituloDetalleJornada').innerText.split(' - ')[0], "");
-
     } catch (error) {
-        console.error("Error al actualizar:", error);
         alert("Error al guardar cambios.");
         btnGuardarEdicion.disabled = false;
     }
@@ -156,4 +132,10 @@ btnGuardarEdicion.addEventListener('click', async () => {
 btnVolverHistorico.addEventListener('click', () => {
     pantallaDetalleJornada.classList.add('hidden');
     pantallaHistorico.classList.remove('hidden');
+});
+
+// ESTE ES EL BOTÓN VOLVER QUE FALTABA
+document.getElementById('btnVolverMenu').addEventListener('click', () => {
+    pantallaHistorico.classList.add('hidden');
+    document.getElementById('pantallaMenuPrincipal').classList.remove('hidden');
 });

@@ -35,7 +35,8 @@ btnCancelarCarga.addEventListener('click', () => {
 });
 
 // Botón para volver al menú principal (sin cerrar la jornada)
-btnVolverMenuDesdeCarga.addEventListener('click', () => {
+// Botón para volver al menú principal (sin cerrar la jornada)
+document.getElementById('btnVolverMenuDesdeCarga').addEventListener('click', () => {
     document.getElementById('pantallaCarga').classList.add('hidden');
     document.getElementById('pantallaMenuPrincipal').classList.remove('hidden');
 });

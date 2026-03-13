@@ -9,31 +9,25 @@ const btnMenuCargar = document.getElementById('btnMenuCargar');
 const btnMenuHistorico = document.getElementById('btnMenuHistorico');
 const btnCerrarSesion = document.getElementById('btnCerrarSesion');
 
-// Esta función se llama desde auth.js cuando el logueo es exitoso
 export function rutearUsuario() {
     const usuarioApp = JSON.parse(sessionStorage.getItem('usuarioApp'));
-    
-    // Ocultamos el login
     pantallaLogin.classList.remove('active');
     pantallaLogin.classList.add('hidden');
 
-    if (usuarioApp.rol === "autorizado") {
-        // El inspector va directo a trabajar
-        mostrarInicioJornada(usuarioApp);
-        
-    } else if (usuarioApp.rol === "veedor") {
-        // El proveedor va directo a auditar
-        cargarHistorico();
-        
-    } else if (usuarioApp.rol === "supervisor" || usuarioApp.rol === "superadmin") {
-        // Los jefes eligen qué hacer
+    if (usuarioApp.rol === "veedor") {
+        btnMenuCargar.classList.add('hidden');
+        btnMenuHistorico.classList.remove('hidden');
+        pantallaMenuPrincipal.classList.remove('hidden');
+    } else if (usuarioApp.rol === "autorizado" || usuarioApp.rol === "supervisor" || usuarioApp.rol === "superadmin") {
+        // Ahora el inspector también ve el menú para poder ir a "Ver Histórico" de sus propios cortes
+        btnMenuCargar.classList.remove('hidden');
+        btnMenuHistorico.classList.remove('hidden');
         pantallaMenuPrincipal.classList.remove('hidden');
     } else {
         alert("Rol no reconocido o en espera de aprobación.");
     }
 }
 
-// Botones del menú (Solo visibles para Admins)
 btnMenuCargar.addEventListener('click', () => {
     pantallaMenuPrincipal.classList.add('hidden');
     const usuarioApp = JSON.parse(sessionStorage.getItem('usuarioApp'));
@@ -45,14 +39,11 @@ btnMenuHistorico.addEventListener('click', () => {
     cargarHistorico();
 });
 
-// Botón global de Cerrar Sesión
 btnCerrarSesion.addEventListener('click', async () => {
     try {
         await signOut(auth);
-        sessionStorage.removeItem('usuarioApp');
-        localStorage.removeItem('jornadaActiva');
-        window.location.reload(); // Recarga limpia de la app
-    } catch (error) {
-        console.error("Error al cerrar sesión:", error);
-    }
+        sessionStorage.clear();
+        localStorage.clear();
+        window.location.reload(); 
+    } catch (error) { console.error("Error al cerrar sesión:", error); }
 });
