@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Desmonte</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="loginScreen" class="container active">
+        <h1>Control de Desmonte</h1>
+        <p>Inicie sesión para comenzar la jornada</p>
+        <button id="btnLogin" class="btn-primary">Ingresar con Google</button>
+    </div>
+
+    <div id="mainScreen" class="container hidden">
+        <h2>Bienvenido, <span id="userNameDisplay">Usuario</span></h2>
+    </div>
+
+    <div id="modalNombre" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Completa tu perfil</h3>
+            <p>Por favor, ingresa tu nombre y apellido real para el registro.</p>
+            <input type="text" id="inputNombre" placeholder="Ej: Juan Pérez" autocomplete="off">
+            <button id="btnGuardarNombre" class="btn-success">Guardar y Solicitar Acceso</button>
+        </div>
+    </div>
+
+    <div id="modalEspera" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Cuenta en revisión</h3>
+            <p>Tu usuario fue registrado. Un administrador debe autorizar tu acceso para comenzar a cargar.</p>
+        </div>
+    </div>
+
+    <div id="pantallaInicioJornada" class="container hidden">
+        <h2>Inicio de Jornada</h2>
+        <p>Selecciona los datos para comenzar a operar hoy.</p>
+        
+        <select id="selectProveedor" class="input-estilo">
+            <option value="" disabled selected>Seleccione Proveedor...</option>
+            <option value="Fibraytel">Fibraytel</option>
+            <option value="JG">JG</option>
+        </select>
+
+        <input type="text" id="inputCentral" class="input-estilo" placeholder="Central (Opcional)">
+        <input type="text" id="inputArmario" class="input-estilo" placeholder="Armario (Opcional)">
+        
+        <button id="btnIniciarJornada" class="btn-primary">Comenzar Jornada</button>
+    </div>
+
+    <div id="pantallaCarga" class="container hidden">
+        <div class="header-carga">
+            <h3>Carga de Desmonte</h3>
+            <div style="display: flex; gap: 5px;">
+                <button id="btnVolverMenuDesdeCarga" class="btn-secundario">Menú</button>
+                <button id="btnVerConsolidado" class="btn-secundario">Consolidado</button>
+            </div>
+        </div>
+        
+        <p>Indique el elemento a cargar:</p>
+        <div class="grid-pares" id="contenedorPares">
+            <button class="btn-par" data-tipo="metro">10P</button>
+            <button class="btn-par" data-tipo="metro">20P</button>
+            <button class="btn-par" data-tipo="metro">30P</button>
+            <button class="btn-par" data-tipo="metro">50P</button>
+            <button class="btn-par" data-tipo="metro">100P</button>
+            <button class="btn-par" data-tipo="metro">200P</button>
+            <button class="btn-par" data-tipo="metro">300P</button>
+            <button class="btn-par" data-tipo="metro">400P</button>
+            <button class="btn-par" data-tipo="metro">600P</button>
+            <button class="btn-par" data-tipo="metro">900P</button>
+            <button class="btn-par" data-tipo="metro">1200P</button>
+            <button class="btn-par" data-tipo="metro">1500P</button>
+            <button class="btn-par" data-tipo="metro">1800P</button>
+            <button class="btn-par" data-tipo="metro">2200P</button>
+            <button class="btn-par especial" data-tipo="unidad">Xaga</button>
+            <button class="btn-par especial" data-tipo="unidad">Terminal</button>
+        </div>
+        
+        <button id="btnCerrarDiaModal" class="btn-peligro mt-20">Cerrar Día (Finalizar Tareas)</button>
+    </div>
+
+    <div id="modalCantidad" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="tituloModalCantidad">Cargando...</h3>
+            <p id="labelCantidad">Ingrese cantidad</p>
+            <input type="number" id="inputCantidad" placeholder="0" min="1">
+            <button id="btnGuardarRegistro" class="btn-success btn-grande">+</button>
+            <button id="btnCancelarCarga" class="btn-texto">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="pantallaConsolidado" class="container hidden">
+        <h2>Consolidado Actual</h2>
+        <p>Resumen de lo cargado en esta jornada.</p>
+        
+        <div id="listaConsolidado" class="lista-resultados">
+            </div>
+
+        <button id="btnVolverCarga" class="btn-secundario mt-20">Volver a Cargar</button>
+    </div>
+
+    <div id="modalCierre" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Finalizar Jornada</h3>
+            <p>Ingrese el PIN de seguridad para cerrar el día.</p>
+            
+            <input type="password" id="inputPinCierre" placeholder="PIN de 4 dígitos" maxlength="4" class="input-estilo" style="text-align: center; letter-spacing: 5px; font-size: 20px;">
+            
+            <button id="btnConfirmarCierre" class="btn-primary">Confirmar y Cerrar</button>
+            <button id="btnCancelarCierre" class="btn-texto">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="pantallaHistorico" class="container hidden">
+        <div class="header-carga">
+            <h2>Histórico de Desmontes</h2>
+            <button id="btnVolverMenu" class="btn-secundario">Volver</button>
+        </div>
+        <p>Seleccione una jornada para ver el detalle.</p>
+        
+        <div id="listaJornadas" class="lista-resultados">
+            </div>
+    </div>
+
+    <div id="pantallaDetalleJornada" class="container hidden">
+        <div class="header-carga">
+            <h3 id="tituloDetalleJornada">Detalle del Día</h3>
+            <button id="btnVolverHistorico" class="btn-secundario">Atrás</button>
+        </div>
+        
+        <div id="contenidoDetalleJornada" class="lista-resultados">
+            </div>
+    </div>
+
+    <div id="modalEditarRegistro" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Editar Recorte</h3>
+            <p id="labelEditarInfo">Par: 100P</p>
+            <input type="number" id="inputEditarCantidad" class="input-estilo" placeholder="Nueva cantidad">
+            <button id="btnGuardarEdicion" class="btn-success">Guardar Cambios</button>
+            <button id="btnCancelarEdicion" class="btn-texto">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="pantallaMenuPrincipal" class="container hidden">
+        <h2>Panel de Control</h2>
+        <p>Seleccione una opción para continuar:</p>
+        
+        <button id="btnMenuCargar" class="btn-primary btn-grande mt-20">Cargar Desmonte</button>
+        <button id="btnMenuHistorico" class="btn-secundario btn-grande mt-20">Ver Histórico</button>
+        
+        <button id="btnCerrarSesion" class="btn-texto mt-20" style="margin-top: 40px; color: #dc3545;">
+            Cerrar Sesión
+        </button>
+    </div>
+
+    <script type="module" src="config.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="menu.js"></script>
+    <script type="module" src="jornada.js"></script>
+    <script type="module" src="carga.js"></script>
+    <script type="module" src="consolidado.js"></script>
+    <script type="module" src="cierre.js"></script>
+    <script type="module" src="historico.js"></script>
+</body>
+</html>
