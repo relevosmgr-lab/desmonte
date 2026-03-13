@@ -1,4 +1,4 @@
-import { db, collection, query, where, getDocs, doc, updateDoc, orderBy } from './config.js';
+import { db, collection, query, where, getDocs, doc, updateDoc } from './config.js';
 
 const pantallaHistorico = document.getElementById('pantallaHistorico');
 const pantallaDetalleJornada = document.getElementById('pantallaDetalleJornada');
@@ -17,7 +17,7 @@ let idJornadaEnVista = null;
 export async function cargarHistorico() {
     pantallaHistorico.classList.remove('hidden');
     listaJornadas.innerHTML = "<p>Buscando historial...</p>";
-    usuarioApp = JSON.parse(sessionStorage.getItem('usuarioApp')); // Recarga por si hubo cambios
+    usuarioApp = JSON.parse(sessionStorage.getItem('usuarioApp')); 
 
     try {
         let q;
@@ -26,10 +26,8 @@ export async function cargarHistorico() {
         if (usuarioApp.rol === "veedor") {
             q = query(jornadasRef, where("proveedor", "==", usuarioApp.proveedor));
         } else if (usuarioApp.rol === "autorizado") {
-            // El inspector SOLO ve sus propias jornadas históricas
             q = query(jornadasRef, where("id_inspector", "==", usuarioApp.uid));
         } else {
-            // Supervisor o Superadmin ven TODO
             q = query(jornadasRef); 
         }
 
@@ -64,6 +62,7 @@ export async function cargarHistorico() {
     }
 }
 
+// NUEVA FUNCIÓN AGRUPADA
 window.verDetalleJornada = async function(idJornada, proveedor, fecha) {
     idJornadaEnVista = idJornada;
     pantallaHistorico.classList.add('hidden');
@@ -75,31 +74,85 @@ window.verDetalleJornada = async function(idJornada, proveedor, fecha) {
         const q = query(collection(db, "registros_extraccion"), where("id_jornada", "==", idJornada));
         const querySnapshot = await getDocs(q);
 
-        let html = "";
+        // Objeto para agrupar los recortes por tipo de elemento
+        const resumen = {};
+
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            const sufijo = data.unidad_medida === "metro" ? "m" : "u";
+            const tipo = data.tipo_elemento;
             
-            let btnEditar = "";
-            if (usuarioApp.rol === "supervisor" || usuarioApp.rol === "superadmin") {
-                btnEditar = `<button class="btn-editar-chico" onclick="abrirModalEdicion('${data.id_registro}', '${data.tipo_elemento}', ${data.cantidad})">Editar</button>`;
+            if (!resumen[tipo]) {
+                resumen[tipo] = { total: 0, unidad: data.unidad_medida, recortes: [] };
             }
+            
+            resumen[tipo].total += data.cantidad;
+            resumen[tipo].recortes.push(data);
+        });
 
+        if (Object.keys(resumen).length === 0) {
+            contenidoDetalleJornada.innerHTML = "<p>No hay recortes en esta jornada.</p>";
+            return;
+        }
+
+        let html = "";
+
+        // Generamos el acordeón
+        for (const [tipo, datos] of Object.entries(resumen)) {
+            const sufijo = datos.unidad === "metro" ? "m" : "u";
+            
+            // Encabezado del grupo (Clickable)
             html += `
-                <div class="item-recorte">
-                    <div>
-                        <strong>${data.tipo_elemento}</strong><br>
-                        <span style="font-size: 18px;">${data.cantidad} ${sufijo}</span>
+                <div class="grupo-par">
+                    <div class="grupo-par-header" onclick="toggleGrupo('${tipo}')">
+                        <span>${tipo}</span>
+                        <span>${datos.total} ${sufijo} ▼</span>
                     </div>
-                    ${btnEditar}
+                    <div class="grupo-par-body" id="grupo-${tipo}">
+            `;
+
+            // Detalle de cada recorte dentro del grupo
+            datos.recortes.forEach(recorte => {
+                let btnEditar = "";
+                if (usuarioApp.rol === "supervisor" || usuarioApp.rol === "superadmin") {
+                    btnEditar = `<button class="btn-editar-chico" onclick="abrirModalEdicion('${recorte.id_registro}', '${recorte.tipo_elemento}', ${recorte.cantidad})">Editar</button>`;
+                }
+
+                // Sumamos la hora exacta si la necesitamos auditar
+                let horaCarga = "";
+                if (recorte.timestamp_carga) {
+                    horaCarga = recorte.timestamp_carga.toDate().toLocaleTimeString('es-AR', {hour: '2-digit', minute:'2-digit'});
+                }
+
+                html += `
+                    <div class="item-recorte">
+                        <div>
+                            <span style="font-size: 12px; color: #888;">Hora: ${horaCarga}</span><br>
+                            <span style="font-size: 18px; font-weight: bold;">${recorte.cantidad} ${sufijo}</span>
+                        </div>
+                        ${btnEditar}
+                    </div>
+                `;
+            });
+
+            // Cerramos los divs del grupo
+            html += `
+                    </div>
                 </div>
             `;
-        });
-        if(html === "") html = "<p>No hay recortes en esta jornada.</p>";
+        }
+        
         contenidoDetalleJornada.innerHTML = html;
+
     } catch (error) {
+        console.error("Error al cargar detalle:", error);
         contenidoDetalleJornada.innerHTML = "<p>Error al cargar recortes.</p>";
     }
+}
+
+// Función global para abrir/cerrar los grupos del acordeón
+window.toggleGrupo = function(tipo) {
+    const body = document.getElementById(`grupo-${tipo}`);
+    body.classList.toggle('active');
 }
 
 window.abrirModalEdicion = function(idRegistro, tipoElemento, cantidadActual) {
@@ -122,6 +175,7 @@ btnGuardarEdicion.addEventListener('click', async () => {
         modalEditarRegistro.classList.add('hidden');
         btnGuardarEdicion.disabled = false;
         btnGuardarEdicion.innerText = "Guardar Cambios";
+        // Refrescamos la vista
         verDetalleJornada(idJornadaEnVista, document.getElementById('tituloDetalleJornada').innerText.split(' - ')[0], "");
     } catch (error) {
         alert("Error al guardar cambios.");
@@ -134,7 +188,6 @@ btnVolverHistorico.addEventListener('click', () => {
     pantallaHistorico.classList.remove('hidden');
 });
 
-// ESTE ES EL BOTÓN VOLVER QUE FALTABA
 document.getElementById('btnVolverMenu').addEventListener('click', () => {
     pantallaHistorico.classList.add('hidden');
     document.getElementById('pantallaMenuPrincipal').classList.remove('hidden');

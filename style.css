@@ -206,3 +206,58 @@ select,
     font-weight: bold;
     cursor: pointer;
 }
+
+/* --- ESTILOS DEL MÓDULO HISTÓRICO Y ACORDEÓN --- */
+.grupo-par {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.grupo-par-header {
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #e9ecef;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.grupo-par-body {
+    padding: 10px;
+    display: none; /* Oculto por defecto */
+}
+
+.grupo-par-body.active {
+    display: block; /* Se muestra al tocar */
+}
+
+.item-recorte {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 8px;
+    border-left: 4px solid #4285F4;
+}
+
+/* Forzamos al botón de editar a ser chico y no ocupar el 100% de la pantalla */
+.btn-editar-chico {
+    background-color: #ffc107;
+    color: #333;
+    border: none;
+    padding: 8px 15px !important;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    width: auto !important; 
+    margin-top: 0 !important; 
+}
